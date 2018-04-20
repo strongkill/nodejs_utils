@@ -79,7 +79,8 @@ function replaceAll(find, replace, str){
 }
 exports.searchStr = function(data,reg){
     var ret=[];
-    data = replaceAll('\r\n','',data);
+    data = replaceAll('\r','',data);
+    data = replaceAll('\n','',data);
     var ge = new RegExp(reg);
     var match;
     while(match =  ge.exec(data))

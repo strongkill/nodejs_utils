@@ -1,8 +1,9 @@
 var mysql      = require('mysql');
 var config = require('../config');
 var Logger = require('./Logger');
-var pool = mysql.createPool(config.database);
+const { Pool,Client } = require('pg')
 
+var pool = undefined;
 
 exports.shutdown = function(){
     this.done();
@@ -74,8 +75,7 @@ exports.saveOrUpdateObject = function(obj,cb){
 }
 
 exports.executeBatchUpdate = function(preparedSql,datas,callback){
-    pool.getConnection(function(err, connection) {
-    });
+    //not imp
 }
 
 exports.delete = function(sql,data,callback){
@@ -101,26 +101,54 @@ exports.update = function(sql,data,callback){
 }
 
 function query(sql,data,callback){
-    var currentTime = Date.now();
-    pool.getConnection(function(err, connection) {
-        if(connection) {
-            connection.query(sql, data, function (error, results, fields) {
-                var currentTime2 = Date.now() - currentTime;
-                if (currentTime2 > 2000)
-                    Logger.warn(currentTime2 + " ms , slow SQL:" + sql);
-
-                connection.release();
-                if (error) {
-                    error.position = "QUERY";
-                    error.parameter = sql;
-                    throw error;
-                }
-                //if(results.length>0){
-                callback(results, fields);
-                //}
-            });
-        }else{
-            callback({},{});
+    if(pool===undefined) {
+        if (config.database.databaseType === 'mysql') {
+            pool = mysql.createPool(config.database.dbinfo[config.database.databaseType]);
+        } else if (config.database.databaseType === 'postgreSQL') {
+            pool = new Pool(config.database.dbinfo[config.database.databaseType]);
         }
-    });
+    }
+
+    var currentTime = Date.now();
+    if(config.database.databaseType==='mysql'){
+        pool.getConnection(function(err, connection) {
+            if(connection) {
+                connection.query(sql, data, function (error, results, fields) {
+                    var currentTime2 = Date.now() - currentTime;
+                    if (currentTime2 > 2000)
+                        Logger.warn(currentTime2 + " ms , slow SQL:" + sql);
+
+                    connection.release();
+                    if (error) {
+                        error.position = "QUERY";
+                        error.parameter = sql;
+                        throw error;
+                    }
+                    //if(results.length>0){
+                    callback(results, fields);
+                    //}
+                });
+            }else{
+                callback({},{});
+            }
+        });
+    }else if (config.database.databaseType==='postgreSQL'){
+        pool.on('error', function(err, client){
+            console.error('Unexpected error on idle client', err)
+            process.exit(-1)
+        })
+        pool.connect(function(err, client, done){
+            if (err) throw err
+            client.query(sql,data, function(err, res) {
+            done()
+                if (err) {
+                    Logger.info(err.stack)
+                    callback({},{});
+                } else {
+                    callback(res.rows,res.fields);
+                }
+            })
+        })
+    }
+
 }

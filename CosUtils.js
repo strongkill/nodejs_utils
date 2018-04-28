@@ -31,7 +31,7 @@ function _sliceUploadFile(srcFile,desFile,cb){
  * @private
  */
 exports.COS_sliceUploadFile = function (srcFile,desFile,cb) {
-    _sliceUploadFileUnchangName(srcFile,desFile,cb);
+    _sliceUploadFile(srcFile,desFile,cb);
 }
 
 /**

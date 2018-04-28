@@ -29,6 +29,7 @@ function getFilenameInfo(filename){
     var pos_s = filename.lastIndexOf("/");
     var pos_e = filename.lastIndexOf(".");
     var name = filename.substring(pos_s+1,pos_e);
+    var ext = filename.substr(pos_e+1,filename.length)
     var title = name;
     if(name.length>20){
         name = replaceAll(" ", "", name);
@@ -36,7 +37,7 @@ function getFilenameInfo(filename){
         name = replaceAll(" ", "_", name);
     }
     var fullname = filename.substring(pos_s+1,filename.length);
-    return {'title':title,'name':name,'fullname':fullname};
+    return {'title':title,'name':name,'fullname':fullname,'ext':ext};
 }
 
 
